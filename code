@@ -1,0 +1,244 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+
+// ------------------------ Abstract Book Class ------------------------
+abstract class Book {
+    protected String title;
+    protected String author;
+    protected boolean isBorrowed;
+
+    public Book(String title, String author) {
+        this.title = title.trim();
+        this.author = author.trim();
+        this.isBorrowed = false;
+    }
+
+    public void borrow() {
+        isBorrowed = true;
+    }
+
+    public void returnBook() {
+        isBorrowed = false;
+    }
+
+    public boolean isBorrowed() {
+        return isBorrowed;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public abstract String getInfo();
+}
+
+// ------------------------ Textbook Class ------------------------
+class Textbook extends Book {
+    private String subject;
+
+    public Textbook(String title, String author, String subject) {
+        super(title, author);
+        this.subject = subject;
+    }
+
+    @Override
+    public String getInfo() {
+        return "[Textbook] " + title + " by " + author + " | Subject: " + subject + " | " + (isBorrowed ? "Borrowed" : "Available");
+    }
+}
+
+// ------------------------ Novel Class ------------------------
+class Novel extends Book {
+    private String genre;
+
+    public Novel(String title, String author, String genre) {
+        super(title, author);
+        this.genre = genre;
+    }
+
+    @Override
+    public String getInfo() {
+        return "[Novel] " + title + " by " + author + " | Genre: " + genre + " | " + (isBorrowed ? "Borrowed" : "Available");
+    }
+}
+
+// ------------------------ Main GUI Application ------------------------
+public class LibraryApp {
+    private JFrame frame;
+    private JTextField titleField, authorField, extraField, searchField;
+    private JComboBox<String> typeCombo;
+    private JTextArea bookArea;
+    private ArrayList<Book> books = new ArrayList<>();
+
+    public LibraryApp() {
+        initializeUI();
+        addSampleBooks();
+        refreshBookList();
+    }
+
+    private void initializeUI() {
+        frame = new JFrame("📚 Library Management App");
+        frame.setSize(700, 550);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout(10, 10));
+
+        // Top Input Panel
+        JPanel inputPanel = new JPanel(new GridLayout(5, 2, 5, 5));
+        inputPanel.setBorder(BorderFactory.createTitledBorder("Add New Book"));
+
+        inputPanel.add(new JLabel("Book Type:"));
+        typeCombo = new JComboBox<>(new String[]{"Textbook", "Novel"});
+        inputPanel.add(typeCombo);
+
+        inputPanel.add(new JLabel("Title:"));
+        titleField = new JTextField();
+        inputPanel.add(titleField);
+
+        inputPanel.add(new JLabel("Author:"));
+        authorField = new JTextField();
+        inputPanel.add(authorField);
+
+        inputPanel.add(new JLabel("Subject / Genre:"));
+        extraField = new JTextField();
+        inputPanel.add(extraField);
+
+        JButton addButton = new JButton("➕ Add Book");
+        inputPanel.add(addButton);
+        addButton.addActionListener(e -> addBook());
+
+        frame.add(inputPanel, BorderLayout.NORTH);
+
+        // Center Panel for Book List
+        bookArea = new JTextArea();
+        bookArea.setEditable(false);
+        bookArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        JScrollPane scrollPane = new JScrollPane(bookArea);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("📚 Available Books"));
+        frame.add(scrollPane, BorderLayout.CENTER);
+
+        // Bottom Panel for Actions
+        JPanel actionPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        searchField = new JTextField();
+        actionPanel.add(searchField);
+
+        JButton searchButton = new JButton("🔍 Search");
+        searchButton.addActionListener(e -> searchBook());
+        actionPanel.add(searchButton);
+
+        JButton borrowButton = new JButton("📖 Borrow");
+        borrowButton.addActionListener(e -> borrowBook());
+        actionPanel.add(borrowButton);
+
+        JButton returnButton = new JButton("↩ Return");
+        returnButton.addActionListener(e -> returnBook());
+        actionPanel.add(returnButton);
+
+        frame.add(actionPanel, BorderLayout.SOUTH);
+        frame.setVisible(true);
+    }
+
+    private void addSampleBooks() {
+        books.add(new Textbook("Java Programming", "James Gosling", "Computer Science"));
+        books.add(new Novel("The Alchemist", "Paulo Coelho", "Philosophical"));
+        books.add(new Textbook("Physics Basics", "Halliday", "Science"));
+        books.add(new Novel("Sherlock Holmes", "Arthur Conan Doyle", "Mystery"));
+    }
+
+    private void refreshBookList() {
+        bookArea.setText("");
+        for (Book b : books) {
+            bookArea.append(b.getInfo() + "\n");
+        }
+    }
+
+    private void addBook() {
+        String type = (String) typeCombo.getSelectedItem();
+        String title = titleField.getText().trim();
+        String author = authorField.getText().trim();
+        String extra = extraField.getText().trim();
+
+        if (title.isEmpty() || author.isEmpty() || extra.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "⚠ All fields must be filled.");
+            return;
+        }
+
+        for (Book b : books) {
+            if (b.getTitle().equalsIgnoreCase(title)) {
+                JOptionPane.showMessageDialog(frame, "⚠ A book with this title already exists.");
+                return;
+            }
+        }
+
+        if (type.equals("Textbook")) {
+            books.add(new Textbook(title, author, extra));
+        } else {
+            books.add(new Novel(title, author, extra));
+        }
+
+        titleField.setText("");
+        authorField.setText("");
+        extraField.setText("");
+        refreshBookList();
+    }
+
+    private void searchBook() {
+        String query = searchField.getText().trim().toLowerCase();
+        if (query.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "Enter a title to search.");
+            return;
+        }
+
+        bookArea.setText("🔎 Search Results:\n");
+        boolean found = false;
+        for (Book b : books) {
+            if (b.getTitle().toLowerCase().contains(query)) {
+                bookArea.append(b.getInfo() + "\n");
+                found = true;
+            }
+        }
+
+        if (!found) {
+            bookArea.append("No matching books found.\n");
+        }
+    }
+
+    private void borrowBook() {
+        String query = searchField.getText().trim().toLowerCase();
+        for (Book b : books) {
+            if (b.getTitle().toLowerCase().contains(query)) {
+                if (!b.isBorrowed()) {
+                    b.borrow();
+                    JOptionPane.showMessageDialog(frame, "✅ You borrowed: " + b.getTitle());
+                } else {
+                    JOptionPane.showMessageDialog(frame, "⚠ Book is already borrowed.");
+                }
+                refreshBookList();
+                return;
+            }
+        }
+        JOptionPane.showMessageDialog(frame, "❌ Book not found.");
+    }
+
+    private void returnBook() {
+        String query = searchField.getText().trim().toLowerCase();
+        for (Book b : books) {
+            if (b.getTitle().toLowerCase().contains(query)) {
+                if (b.isBorrowed()) {
+                    b.returnBook();
+                    JOptionPane.showMessageDialog(frame, "✅ You returned: " + b.getTitle());
+                } else {
+                    JOptionPane.showMessageDialog(frame, "⚠ Book was not borrowed.");
+                }
+                refreshBookList();
+                return;
+            }
+        }
+        JOptionPane.showMessageDialog(frame, "❌ Book not found.");
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(LibraryApp::new);
+    }
+}
